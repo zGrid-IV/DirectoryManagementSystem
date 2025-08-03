@@ -1,31 +1,33 @@
-#include <iostream>
-#include <direct.h>   // for _mkdir, _getcwd, _chdir
-#include <windows.h>  // for FindFirstFile, FindNextFile
-#include <string>
+#include <iostream>      // For cout and cin
+#include <direct.h>      // For directory functions: _mkdir, _getcwd, _chdir
+#include <windows.h>     // For file listing: FindFirstFile, FindNextFile
+#include <string>        // For handling user input strings
 
 using namespace std;
 
+// Shows all files in the current directory
 void listAllFiles() {
     WIN32_FIND_DATA file;
-    HANDLE searchHandle = FindFirstFile("*", &file);
+    HANDLE searchHandle = FindFirstFile("*", &file);  // * means all files
 
     if (searchHandle != INVALID_HANDLE_VALUE) {
         do {
-            cout << file.cFileName << endl;
-        } while (FindNextFile(searchHandle, &file));
-        FindClose(searchHandle);
+            cout << file.cFileName << endl;  // Print filename
+        } while (FindNextFile(searchHandle, &file));   // Loop through rest
+        FindClose(searchHandle);  // Close search when done
     } else {
         cout << "No files found.\n";
     }
 }
 
+// Shows files that match a specific extension (like .txt)
 void listByExtension() {
     string ext;
     cout << "Enter file extension (e.g., .txt): ";
     cin >> ext;
 
     WIN32_FIND_DATA file;
-    HANDLE searchHandle = FindFirstFile(("*" + ext).c_str(), &file);
+    HANDLE searchHandle = FindFirstFile(("*" + ext).c_str(), &file);  // Search for *.ext
 
     if (searchHandle != INVALID_HANDLE_VALUE) {
         do {
@@ -37,9 +39,10 @@ void listByExtension() {
     }
 }
 
+// Shows files that match a custom pattern
 void listByPattern() {
     string pattern;
-    cout << "Enter pattern (e.g., moha*.*): ";
+    cout << "Enter pattern (e.g., data*.*): ";
     cin >> pattern;
 
     WIN32_FIND_DATA file;
@@ -55,6 +58,7 @@ void listByPattern() {
     }
 }
 
+// File listing menu where user chooses how to view files
 void listFilesMenu() {
     int choice;
     cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice: ";
@@ -68,6 +72,7 @@ void listFilesMenu() {
     }
 }
 
+// Creates a new directory
 void createDirectory() {
     string dirName;
     cout << "Enter directory name: ";
@@ -80,10 +85,11 @@ void createDirectory() {
     }
 }
 
+// Lets user move between folders
 void changeDirectory() {
     int choice;
     string path;
-    char cwd[256];
+    char cwd[256];  // Will store current working directory
 
     cout << "\n=== Change Directory ===\n";
     cout << "[1] Move to Parent Directory\n[2] Move to Root Directory\n[3] Enter Custom Path\nSelect an option: ";
@@ -95,7 +101,7 @@ void changeDirectory() {
                 _getcwd(cwd, sizeof(cwd));
                 cout << "Moved to parent directory: " << cwd << "\n";
             } else {
-                cout << "Error: Unable to move to parent directory.\n";
+                cout << "Error: Unable to move.\n";
             }
             break;
         case 2:
@@ -103,12 +109,12 @@ void changeDirectory() {
                 _getcwd(cwd, sizeof(cwd));
                 cout << "Moved to root directory: " << cwd << "\n";
             } else {
-                cout << "Error: Unable to move to root directory.\n";
+                cout << "Error: Unable to move.\n";
             }
             break;
         case 3:
-            cout << "Enter full path to directory: ";
-            cin.ignore(); // Clear newline left in buffer
+            cout << "Enter full path: ";
+            cin.ignore(); // To handle leftover newline
             getline(cin, path);
             if (_chdir(path.c_str()) == 0) {
                 _getcwd(cwd, sizeof(cwd));
@@ -122,6 +128,7 @@ void changeDirectory() {
     }
 }
 
+// Main menu for the whole program
 void mainMenu() {
     int option;
     do {
@@ -134,16 +141,14 @@ void mainMenu() {
             case 1: listFilesMenu(); break;
             case 2: createDirectory(); break;
             case 3: changeDirectory(); break;
-            case 4: cout << "Exiting...\n"; break;
+            case 4: cout << "Exiting program...\n"; break;
             default: cout << "Invalid option. Try again.\n";
         }
     } while (option != 4);
 }
 
+// Starting point of the program
 int main() {
-    mainMenu();
+    mainMenu();  // Run the menu loop
     return 0;
 }
-
-
-
