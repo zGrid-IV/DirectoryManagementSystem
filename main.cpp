@@ -10,15 +10,25 @@ void listAllFiles() {
     WIN32_FIND_DATA file;
     HANDLE searchHandle = FindFirstFile("*", &file);  // * means all files
 
+    bool filesFound = false;
+
     if (searchHandle != INVALID_HANDLE_VALUE) {
         do {
-            cout << file.cFileName << endl;  // Print filename
-        } while (FindNextFile(searchHandle, &file));   // Loop through rest
-        FindClose(searchHandle);  // Close search when done
-    } else {
-        cout << "No files found.\n";
+            const char* name = file.cFileName;
+            if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
+                cout << name << endl;
+                filesFound = true;
+            }
+        } while (FindNextFile(searchHandle, &file));
+
+        FindClose(searchHandle);
+    }
+
+    if (!filesFound) {
+        cout << "No files found in the current directory.\n";
     }
 }
+
 
 // Shows files that match a specific extension (like .txt)
 void listByExtension() {
@@ -61,16 +71,23 @@ void listByPattern() {
 // File listing menu where user chooses how to view files
 void listFilesMenu() {
     int choice;
-    cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice: ";
+    cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice (1 to 3): ";
     cin >> choice;
+
+    if (cin.fail() || choice < 1 || choice > 3) {
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid choice. Please enter a number from 1 to 3.\n";
+        return;  // Return to menu instead of crashing
+    }
 
     switch (choice) {
         case 1: listAllFiles(); break;
         case 2: listByExtension(); break;
         case 3: listByPattern(); break;
-        default: cout << "Invalid choice.\n";
     }
 }
+
 
 // Creates a new directory
 void createDirectory() {
@@ -134,18 +151,25 @@ void mainMenu() {
     do {
         cout << "\n=== Directory Management System ===\n";
         cout << "[1] List Files\n[2] Create Directory\n[3] Change Directory\n[4] Exit\n";
-        cout << "Select an option: ";
+        cout << "Select an option (1 to 4): ";
         cin >> option;
+
+        if (cin.fail() || option < 1 || option > 4) {
+            cin.clear();                // clear error flag
+            cin.ignore(1000, '\n');     // discard invalid input
+            cout << "Invalid input. Please enter a number from 1 to 4.\n";
+            continue;
+        }
 
         switch (option) {
             case 1: listFilesMenu(); break;
             case 2: createDirectory(); break;
             case 3: changeDirectory(); break;
             case 4: cout << "Exiting program...\n"; break;
-            default: cout << "Invalid option. Try again.\n";
         }
     } while (option != 4);
 }
+
 
 // Starting point of the program
 int main() {
