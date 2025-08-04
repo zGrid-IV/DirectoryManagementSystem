@@ -1,120 +1,153 @@
-
-#include <iostream>      // For cout and cin
-#include <direct.h>      // For directory functions: _mkdir, _getcwd, _chdir
-#include <windows.h>     // For file listing: FindFirstFile, FindNextFile
-#include <string>        // For handling user input strings
+#include <iostream>      // For standard input/output (cin, cout)
+#include <direct.h>      // For directory manipulation (_mkdir, _chdir, _getcwd)
+#include <windows.h>     // For file listing (FindFirstFile, FindNextFile)
+#include <string>        // For using std::string
+#include <limits>        // For clearing input buffer
 
 using namespace std;
 
-// Shows all files in the current directory
+/*-----------------------------------------------------------
+    Utility Functions
+-----------------------------------------------------------*/
+
+// Clears any leftover or invalid input to avoid stream issues
+void clearInput() {
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+// Gets a single-digit integer within a valid range [min–max]
+int getSingleDigitInt(int min, int max) {
+    string input;
+    while (true) {
+        cout << "Enter a number (" << min << " to " << max << "): ";
+        getline(cin, input);
+        if (input.length() == 1 && isdigit(input[0])) {
+            int value = input[0] - '0';
+            if (value >= min && value <= max)
+                return value;
+        }
+        cout << "Invalid input. Please enter a single digit between " << min << " and " << max << ".\n";
+    }
+}
+
+// Validates folder names against illegal Windows characters
+bool isValidName(const string& name) {
+    const string invalidChars = "\\/:*?\"<>|";
+    return !name.empty() && name.find_first_of(invalidChars) == string::npos;
+}
+
+// Returns the current working directory as a string
+string getCurrentDirectory() {
+    char path[256];
+    _getcwd(path, sizeof(path));
+    return string(path);
+}
+
+/*-----------------------------------------------------------
+    File Listing Functions
+-----------------------------------------------------------*/
+
+// Lists all files in the current directory
 void listAllFiles() {
     WIN32_FIND_DATA file;
-    HANDLE searchHandle = FindFirstFile("*", &file);  // * means all files
+    HANDLE handle = FindFirstFile("*", &file);
+    bool found = false;
 
-    bool filesFound = false;
+    cout << "\n--- Files in Current Directory ---\n";
 
-    if (searchHandle != INVALID_HANDLE_VALUE) {
+    if (handle != INVALID_HANDLE_VALUE) {
         do {
-            const char* name = file.cFileName;
-            if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
-                cout << name << endl;
-                filesFound = true;
+            string name = file.cFileName;
+            if (name != "." && name != "..") {
+                cout << " - " << name << endl;
+                found = true;
             }
-        } while (FindNextFile(searchHandle, &file));
-
-        FindClose(searchHandle);
+        } while (FindNextFile(handle, &file));
+        FindClose(handle);
     }
 
-    if (!filesFound) {
-        cout << "No files found in the current directory.\n";
-    }
+    if (!found)
+        cout << "No files found.\n";
 }
 
-
-// Shows files that match a specific extension (like .txt)
+// Lists files by user-specified extension (e.g. .txt)
 void listByExtension() {
     string ext;
-    cout << "Enter file extension (e.g., .txt): ";
-    cin >> ext;
+    cout << "Enter extension (e.g., .txt): ";
+    getline(cin, ext);
 
     WIN32_FIND_DATA file;
-    HANDLE searchHandle = FindFirstFile(("*" + ext).c_str(), &file);  // Search for *.ext
+    HANDLE handle = FindFirstFile(("*" + ext).c_str(), &file);
+    bool found = false;
 
-    if (searchHandle != INVALID_HANDLE_VALUE) {
+    if (handle != INVALID_HANDLE_VALUE) {
+        cout << "\n--- Matching Files ---\n";
         do {
-            cout << file.cFileName << endl;
-        } while (FindNextFile(searchHandle, &file));
-        FindClose(searchHandle);
-    } else {
-        cout << "No matching files found.\n";
+            cout << " - " << file.cFileName << endl;
+            found = true;
+        } while (FindNextFile(handle, &file));
+        FindClose(handle);
     }
+
+    if (!found)
+        cout << "No files match this extension.\n";
 }
 
-// Shows files that match a custom pattern
+// Lists files using custom pattern (e.g., data*.*)
 void listByPattern() {
     string pattern;
     cout << "Enter pattern (e.g., data*.*): ";
-    cin >> pattern;
+    getline(cin, pattern);
 
     WIN32_FIND_DATA file;
-    HANDLE searchHandle = FindFirstFile(pattern.c_str(), &file);
+    HANDLE handle = FindFirstFile(pattern.c_str(), &file);
+    bool found = false;
 
-    if (searchHandle != INVALID_HANDLE_VALUE) {
+    if (handle != INVALID_HANDLE_VALUE) {
+        cout << "\n--- Matching Files ---\n";
         do {
-            cout << file.cFileName << endl;
-        } while (FindNextFile(searchHandle, &file));
-        FindClose(searchHandle);
-    } else {
-        cout << "No files matched the pattern.\n";
+            cout << " - " << file.cFileName << endl;
+            found = true;
+        } while (FindNextFile(handle, &file));
+        FindClose(handle);
     }
+
+    if (!found)
+        cout << "No files matched your pattern.\n";
 }
 
-// File listing menu where user chooses how to view files
-void listFilesMenu() {
-    string input;
-    int choice;
+/*-----------------------------------------------------------
+    Directory Actions
+-----------------------------------------------------------*/
 
-    cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice (1 to 3): ";
-    cin >> input;
+// Creates a new folder after validating the name
+void createDirectory() {
+    string folderName;
+    cout << "Enter new folder name: ";
+    getline(cin, folderName);
 
-    if (input.length() != 1 || !isdigit(input[0])) {
-        cout << "Invalid input. Please enter a single digit from 1 to 3.\n";
+    if (!isValidName(folderName)) {
+        cout << "Invalid folder name. Avoid characters like \\ / : * ? \" < > |\n";
         return;
     }
 
-    choice = input[0] - '0';
-
-    switch (choice) {
-        case 1: listAllFiles(); break;
-        case 2: listByExtension(); break;
-        case 3: listByPattern(); break;
-        default: cout << "Invalid input. Please enter a digit from 1 to 3.\n"; break;
-    }
+    if (_mkdir(folderName.c_str()) == 0)
+        cout << "Folder created successfully.\n";
+    else
+        cout << "Error: Folder already exists or cannot be created.\n";
 }
 
-
-// Creates a new directory
-void createDirectory() {
-    string dirName;
-    cout << "Enter directory name: ";
-    cin >> dirName;
-
-    if (_mkdir(dirName.c_str()) == 0) {
-        cout << "Directory created successfully.\n";
-    } else {
-        cout << "Error: Directory may already exist or cannot be created.\n";
-    }
-}
-
-// Lets user move between folders
+// Changes directory based on user's selection
 void changeDirectory() {
-    int choice;
-    string path;
-    char cwd[256];  // Will store current working directory
-
     cout << "\n=== Change Directory ===\n";
-    cout << "[1] Move to Parent Directory\n[2] Move to Root Directory\n[3] Enter Custom Path\nSelect an option: ";
-    cin >> choice;
+    cout << "[1] Parent Directory\n";
+    cout << "[2] Root Directory\n";
+    cout << "[3] Custom Path\n";
+    int choice = getSingleDigitInt(1, 3);
+
+    char cwd[256];
+    string path;
 
     switch (choice) {
         case 1:
@@ -135,7 +168,6 @@ void changeDirectory() {
             break;
         case 3:
             cout << "Enter full path: ";
-            cin.ignore(); // To handle leftover newline
             getline(cin, path);
             if (_chdir(path.c_str()) == 0) {
                 _getcwd(cwd, sizeof(cwd));
@@ -144,44 +176,56 @@ void changeDirectory() {
                 cout << "Error: Invalid or inaccessible path.\n";
             }
             break;
-        default:
-            cout << "Invalid option.\n";
     }
 }
 
-// Main menu for the whole program
+/*-----------------------------------------------------------
+    Menus
+-----------------------------------------------------------*/
+
+// Displays options for file listing
+void listFilesMenu() {
+    cout << "\n=== File Listing Menu ===\n";
+    cout << "[1] All Files\n";
+    cout << "[2] By Extension\n";
+    cout << "[3] By Pattern\n";
+    
+    int choice = getSingleDigitInt(1, 3);
+
+    switch (choice) {
+        case 1: listAllFiles(); break;
+        case 2: listByExtension(); break;
+        case 3: listByPattern(); break;
+    }
+}
+
+// Main interactive loop of the program
 void mainMenu() {
-    string input;
-    int option;
-
-    do {
+    while (true) {
         cout << "\n=== Directory Management System ===\n";
-        cout << "[1] List Files\n[2] Create Directory\n[3] Change Directory\n[4] Exit\n";
-        cout << "Select an option (1 to 4): ";
-        cin >> input;
+        cout << "[1] List Files\n";
+        cout << "[2] Create Directory/Folder\n";
+        cout << "[3] Change Directory\n";
+        cout << "[4] Exit Program\n";
 
-        // Check if input is exactly 1 character and is a digit from '1' to '4'
-        if (input.length() != 1 || !isdigit(input[0])) {
-            cout << "Invalid input. Please enter a single digit from 1 to 4.\n";
-            continue;
-        }
+        int choice = getSingleDigitInt(1, 4);
 
-        option = input[0] - '0';
-
-        switch (option) {
+        switch (choice) {
             case 1: listFilesMenu(); break;
             case 2: createDirectory(); break;
             case 3: changeDirectory(); break;
-            case 4: cout << "Exiting program...\n"; break;
-            default: cout << "Invalid input. Please enter a digit from 1 to 4.\n"; break;
+            case 4:
+                cout << "Goodbye! Thanks for using the system.\n";
+                return;
         }
-    } while (option != 4);
+    }
 }
 
+/*-----------------------------------------------------------
+    Entry Point
+-----------------------------------------------------------*/
 
-
-// Starting point of the program
 int main() {
-    mainMenu();  // Run the menu loop
+    mainMenu();  // Starts the interactive session
     return 0;
 }
