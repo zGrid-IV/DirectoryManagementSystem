@@ -1,3 +1,4 @@
+
 #include <iostream>      // For cout and cin
 #include <direct.h>      // For directory functions: _mkdir, _getcwd, _chdir
 #include <windows.h>     // For file listing: FindFirstFile, FindNextFile
@@ -70,21 +71,24 @@ void listByPattern() {
 
 // File listing menu where user chooses how to view files
 void listFilesMenu() {
+    string input;
     int choice;
-    cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice (1 to 3): ";
-    cin >> choice;
 
-    if (cin.fail() || choice < 1 || choice > 3) {
-        cin.clear();
-        cin.ignore(1000, '\n');
-        cout << "Invalid choice. Please enter a number from 1 to 3.\n";
-        return;  // Return to menu instead of crashing
+    cout << "\n[1] List All Files\n[2] List by Extension\n[3] List by Pattern\nEnter choice (1 to 3): ";
+    cin >> input;
+
+    if (input.length() != 1 || !isdigit(input[0])) {
+        cout << "Invalid input. Please enter a single digit from 1 to 3.\n";
+        return;
     }
+
+    choice = input[0] - '0';
 
     switch (choice) {
         case 1: listAllFiles(); break;
         case 2: listByExtension(); break;
         case 3: listByPattern(); break;
+        default: cout << "Invalid input. Please enter a digit from 1 to 3.\n"; break;
     }
 }
 
@@ -147,28 +151,33 @@ void changeDirectory() {
 
 // Main menu for the whole program
 void mainMenu() {
+    string input;
     int option;
+
     do {
         cout << "\n=== Directory Management System ===\n";
         cout << "[1] List Files\n[2] Create Directory\n[3] Change Directory\n[4] Exit\n";
         cout << "Select an option (1 to 4): ";
-        cin >> option;
+        cin >> input;
 
-        if (cin.fail() || option < 1 || option > 4) {
-            cin.clear();                // clear error flag
-            cin.ignore(1000, '\n');     // discard invalid input
-            cout << "Invalid input. Please enter a number from 1 to 4.\n";
+        // Check if input is exactly 1 character and is a digit from '1' to '4'
+        if (input.length() != 1 || !isdigit(input[0])) {
+            cout << "Invalid input. Please enter a single digit from 1 to 4.\n";
             continue;
         }
+
+        option = input[0] - '0';
 
         switch (option) {
             case 1: listFilesMenu(); break;
             case 2: createDirectory(); break;
             case 3: changeDirectory(); break;
             case 4: cout << "Exiting program...\n"; break;
+            default: cout << "Invalid input. Please enter a digit from 1 to 4.\n"; break;
         }
     } while (option != 4);
 }
+
 
 
 // Starting point of the program
